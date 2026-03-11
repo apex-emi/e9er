@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Apex Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&family=Syne:wght@700;800&family=Unispace&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    height: 100vh; width: 100vw;
+    overflow: hidden;
+    font-family: 'DM Sans', sans-serif;
+    background: #0a0a0a;
+  }
+
+  /* ── WALLPAPER ── */
+  .bg {
+    position: fixed; inset: 0;
+    background-image: url('file:///C:/Users/emigd/Desktop/Hungry%26Humble/ICONS/WallPAPER000000000001.jpg');
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+  .bg::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(0,0,0,0.18);
+    pointer-events: none;
+  }
+
+  /* ── 4×4 GRID ── */
+  /*
+    Columns: A B C D  (4 equal columns)
+    Rows:    1 2 3 4  (4 equal rows)
+
+    Module 1 — Clock/Banner:    col B–C, row 1–2
+    Module 2 — Quick Links:     col B–C, row 3–4
+    Module 3 — Search Widget:   col A,   row 1–4 (full left)
+    col D row 1–4: reserved (Weather D1–D2, Bitcoin D3–D4)
+  */
+  .grid {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    width: 100vw; height: 100vh;
+  }
+
+  /* subtle grid lines */
+  .cell {
+    display: flex; align-items: center; justify-content: center;
+    padding: 14px;
+    border-right: 1px solid rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .cell:nth-child(4n)   { border-right: none; }
+  .cell:nth-last-child(-n+4) { border-bottom: none; }
+
+  /* Module spans */
+  .cell-a1      { grid-column: 1;   grid-row: 1 / 3; }  /* A1–A2 — Search Widget */
+  .cell-a2      { grid-column: 1;   grid-row: 3 / 4; align-items: flex-start; }  /* A3 only — Bitcoin Hub (reduced height) */
+  .cell-banner  { grid-column: 2/4; grid-row: 1 / 3; }  /* B1–C2 — Clock/Banner */
+  .cell-links   { grid-column: 2/4; grid-row: 3 / 5; }  /* B3–C4 — Quick Links  */
+  .cell-d1      { grid-column: 4;   grid-row: 1 / 3; align-items: flex-start; }  /* D1–D2 — Weather */
+  .cell-d2      { grid-column: 4;   grid-row: 3 / 5; }  /* D3–D4 — reserved     */
+
+  /* ── FROSTED GLASS BASE ── */
+  .glass {
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ════════════════════════════════════════
+     SHARED TOKEN — all side panels (col A + col D)
+     use this as their content max-width
+  ════════════════════════════════════════ */
+  :root {
+    --panel-radius: 12px;
+    --panel-bg: rgba(255,255,255,0.07);
+    --panel-border: rgba(255,255,255,0.13);
+    --label-font: 'Syne', sans-serif;
+    --label-size: 9px;
+    --label-spacing: 0.26em;
+    --label-color: rgba(255,255,255,0.38);
+    --side-max: 100%;
+  }
+
+  /* ════════════════════════════════════════
+     MODULE 3 — SEARCH WIDGET (A1–A2)
+  ════════════════════════════════════════ */
+  .sw-wrap {
+    display: flex; flex-direction: column;
+    width: var(--side-max);
+    animation: fadein 0.6s ease both;
+  }
+
+  .sw-label {
+    font-family: var(--label-font);
+    font-size: var(--label-size); font-weight: 700;
+    letter-spacing: var(--label-spacing); text-transform: uppercase;
+    color: var(--label-color);
+    margin-bottom: 10px; padding-left: 2px;
+  }
+
+  .sw-engines {
+    display: flex; width: 100%;
+    border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+    overflow: hidden;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-bottom: none;
+  }
+
+  .eng {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 10px 4px; cursor: pointer;
+    border: none; background: transparent;
+    transition: background 0.18s; position: relative;
+  }
+  .eng:not(:last-child)::after {
+    content: ''; position: absolute;
+    right: 0; top: 22%; height: 56%;
+    width: 1px; background: rgba(255,255,255,0.08);
+  }
+  .eng:hover { background: rgba(255,255,255,0.1); }
+  .eng img, .eng svg {
+    width: 18px; height: 18px; object-fit: contain;
+    border-radius: 4px;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+    transition: transform 0.15s ease;
+  }
+  .eng:hover img, .eng:hover svg { transform: scale(1.18); }
+
+  .sw-divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  }
+
+  .sw-input-row {
+    display: flex; width: 100%;
+    border-radius: 0 0 var(--panel-radius) var(--panel-radius);
+    overflow: hidden;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: rgba(255,255,255,0.09);
+    border: 1px solid var(--panel-border);
+    border-top: none;
+  }
+
+  #sw-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 11px; font-weight: 300;
+    padding: 10px 12px; caret-color: rgba(255,255,255,0.7);
+  }
+  #sw-input::placeholder { color: rgba(255,255,255,0.25); }
+
+  .sw-go {
+    background: transparent; border: none;
+    border-left: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.35); padding: 0 12px;
+    cursor: pointer; font-size: 14px;
+    transition: color 0.2s, background 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sw-go:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+  .sw-hint {
+    margin-top: 6px; padding-left: 2px;
+    font-size: 7px; color: rgba(255,255,255,0.18);
+    letter-spacing: 0.04em;
+  }
+
+  /* ════════════════════════════════════════
+     MODULE 1 — CLOCK / BANNER (B1–C2)
+  ════════════════════════════════════════ */
+  .banner-wrap {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+    padding: 32px 28px;
+    gap: 8px;
+    animation: fadein 0.5s ease both;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(28px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+
+  /* clock row: HH:MM stays big, :SS shrinks to AM/PM size */
+  .banner-clock-row {
+    display: flex; align-items: flex-start; justify-content: center;
+    width: 100%;
+  }
+
+  .banner-time-block {
+    display: flex; align-items: flex-start; gap: 0;
+  }
+
+  /* HH:MM — large */
+  .banner-time {
+    font-family: 'DM Sans', sans-serif;
+    font-size: clamp(48px, 5.5vw, 78px);
+    font-weight: 200;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-shadow: 0 0 60px rgba(255,255,255,0.12), 0 2px 30px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.9);
+  }
+
+  /* :SS + AM/PM + Date — stacked small on the right */
+  .banner-right-col {
+    display: flex; flex-direction: column;
+    align-items: flex-start;
+    margin-left: 7px;
+    margin-top: 7px;
+    gap: 2px;
+  }
+
+  /* :SS small — same visual weight as AM/PM */
+  .banner-secs {
+    font-family: 'DM Sans', sans-serif;
+    font-size: clamp(13px, 1.5vw, 20px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.01em;
+    line-height: 1;
+  }
+
+  .banner-ampm {
+    font-family: 'DM Sans', sans-serif;
+    font-size: clamp(13px, 1.5vw, 20px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+
+  .banner-date {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8.5px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.32);
+    letter-spacing: 0.07em;
+    white-space: nowrap;
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .banner-title {
+    font-family: 'Unispace', sans-serif;
+    font-size: clamp(10px, 1.1vw, 14px);
+    color: rgba(255,255,255,0.38);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: 2px;
+    text-shadow: 0 1px 12px rgba(0,0,0,0.9);
+  }
+
+  .banner-search-wrap {
+    display: flex; flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    width: 100%; max-width: 420px;
+    margin-top: 12px;
+  }
+
+  .banner-search-row {
+    display: flex; width: 100%;
+    border-radius: var(--panel-radius); overflow: hidden;
+  }
+
+  #bSearch {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 11px; font-weight: 300;
+    padding: 10px 14px; caret-color: rgba(255,255,255,0.7);
+  }
+  #bSearch::placeholder { color: rgba(255,255,255,0.26); }
+
+  .banner-go {
+    background: transparent; border: none;
+    border-left: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.38); padding: 0 12px;
+    cursor: pointer; font-size: 14px;
+    transition: color 0.2s, background 0.2s;
+    display: flex; align-items: center;
+  }
+  .banner-go:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+  .banner-engines-row {
+    display: flex; width: 100%;
+    border-radius: var(--panel-radius); overflow: hidden;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+  }
+
+  .beng {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px; padding: 8px 4px;
+    cursor: pointer; border: none;
+    background: transparent; transition: background 0.18s;
+    position: relative;
+  }
+  .beng:not(:last-child)::after {
+    content: ''; position: absolute;
+    right: 0; top: 20%; height: 60%;
+    width: 1px; background: rgba(255,255,255,0.07);
+  }
+  .beng:hover { background: rgba(255,255,255,0.1); }
+  .beng img {
+    width: 18px; height: 18px; object-fit: contain;
+    border-radius: 4px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    transition: transform 0.15s ease;
+  }
+  .beng:hover img { transform: scale(1.2); }
+  .beng span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 7px; font-weight: 400;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: color 0.15s;
+  }
+  .beng:hover span { color: rgba(255,255,255,0.75); }
+
+  /* ════════════════════════════════════════
+     MODULE 2 — QUICK LINKS (B3–C4)
+  ════════════════════════════════════════ */
+  .lw-wrap {
+    display: flex; flex-direction: column;
+    width: 100%; max-width: 520px;
+    animation: fadein 0.7s ease both;
+  }
+
+  .lw-label {
+    font-family: var(--label-font);
+    font-size: var(--label-size); font-weight: 700;
+    letter-spacing: var(--label-spacing); text-transform: uppercase;
+    color: var(--label-color);
+    margin-bottom: 10px; padding-left: 2px;
+  }
+
+  .lw-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    border-radius: var(--panel-radius); overflow: hidden;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+  }
+
+  .lw-btn {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 5px; padding: 12px 6px;
+    cursor: pointer; text-decoration: none;
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 7px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    transition: background 0.18s, color 0.18s;
+    position: relative;
+    border: none;
+  }
+  .lw-btn:not(:nth-child(5n))::after {
+    content: ''; position: absolute;
+    right: 0; top: 15%; height: 70%;
+    width: 1px; background: rgba(255,255,255,0.07);
+  }
+  .lw-btn:nth-child(-n+5) { border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .lw-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .lw-btn img, .lw-btn svg {
+    width: 22px; height: 22px; object-fit: contain;
+    border-radius: 5px;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+    transition: transform 0.15s ease;
+  }
+  .lw-btn:hover img, .lw-btn:hover svg { transform: scale(1.15); }
+
+  /* ════════════════════════════════════════
+     MODULE 7 — WORLD NEWS FEED (D3–D4)
+  ════════════════════════════════════════ */
+  .news-wrap {
+    display: flex; flex-direction: column;
+    width: 100%; height: 100%;
+    animation: fadein 1.2s ease both;
+  }
+  .news-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 8px; padding: 0 2px; flex-shrink: 0;
+  }
+  .news-label {
+    font-family: 'Unispace', sans-serif;
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 50%, #6bcbff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .news-refresh-btn {
+    background: transparent; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.2); font-size: 10px;
+    transition: color 0.2s, transform 0.3s;
+    padding: 0;
+  }
+  .news-refresh-btn:hover { color: rgba(255,255,255,0.6); transform: rotate(180deg); }
+  .news-list {
+    display: flex; flex-direction: column;
+    gap: 4px; flex: 1; min-height: 0;
+    overflow: hidden;
+  }
+  .news-card {
+    display: flex; align-items: stretch;
+    border-radius: 8px; overflow: hidden;
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer; text-decoration: none;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+    min-height: 0;
+  }
+  .news-card:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.18); transform: translateX(2px); }
+  .news-img {
+    width: 48px; flex-shrink: 0;
+    object-fit: cover; display: block;
+    background: rgba(255,255,255,0.05);
+  }
+  .news-img-placeholder {
+    width: 48px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.04);
+    font-size: 16px;
+  }
+  .news-body {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    padding: 5px 8px; gap: 2px;
+  }
+  .news-source {
+    font-family: var(--label-font);
+    font-size: 6px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,180,80,0.6);
+  }
+  .news-headline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8px; font-weight: 400;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.35;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+    letter-spacing: 0.01em;
+  }
+  .news-snippet {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 6.5px; font-weight: 300;
+    color: rgba(255,255,255,0.35);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .news-footer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 6px; font-weight: 300;
+    color: rgba(255,255,255,0.15);
+    text-align: right; margin-top: 3px; flex-shrink: 0;
+    padding: 0 2px;
+  }
+  @keyframes newsSpin { to { transform: rotate(360deg); } }
+  .news-loading {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.2); font-size: 9px;
+    font-family: 'DM Sans', sans-serif; letter-spacing: 0.08em;
+  }
+    width: 100%; height: 100%; border-radius: var(--panel-radius);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed rgba(255,255,255,0.06);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.07);
+    font-size: 9px; letter-spacing: 0.18em;
+    text-transform: uppercase; font-family: 'Syne', sans-serif;
+  }
+  .cell-placeholder .ph-coords {
+    font-size: 14px; font-weight: 700; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.06);
+  }
+
+  /* ════════════════════════════════════════
+     MODULE 4 — CRYPTO HUB (A3–A4)
+  ════════════════════════════════════════ */
+  .crypto-wrap {
+    display: flex; flex-direction: column;
+    width: 100%; max-width: 300px;
+    animation: fadein 0.8s ease both;
+  }
+
+  .crypto-header {
+    display: flex; align-items: baseline; gap: 8px;
+    margin-bottom: 10px; padding-left: 3px;
+  }
+
+  .crypto-label {
+    font-family: 'Unispace', sans-serif;
+    font-size: 13px; font-weight: 400;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    background: linear-gradient(135deg, #f7c948 0%, #ff8c42 50%, #e040fb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .crypto-sublabel {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 7px; font-weight: 300;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+  }
+
+  .crypto-grid {
+    display: flex; flex-direction: column;
+    border-radius: 14px; overflow: visible;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(247,201,72,0.18);
+    box-shadow: 0 0 30px rgba(247,201,72,0.06), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .crypto-btn {
+    display: flex; align-items: center;
+    gap: 11px; padding: 11px 14px;
+    cursor: pointer; text-decoration: none;
+    background: transparent;
+    transition: background 0.18s;
+    position: relative;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .crypto-btn:last-child { border-bottom: none; }
+  .crypto-btn:first-child { border-radius: 14px 14px 0 0; }
+  .crypto-btn:last-child  { border-radius: 0 0 14px 14px; }
+  .crypto-btn:hover { background: rgba(247,201,72,0.08); }
+
+  .crypto-btn img {
+    width: 22px; height: 22px; object-fit: contain;
+    border-radius: 6px; flex-shrink: 0;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+    transition: transform 0.15s ease;
+  }
+  .crypto-btn:hover img { transform: scale(1.15); }
+
+  .crypto-btn-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px; font-weight: 400;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 0.04em;
+    flex: 1;
+    transition: color 0.15s;
+  }
+  .crypto-btn:hover .crypto-btn-name { color: #fff; }
+
+  /* ── custom tooltip ── */
+  .crypto-tooltip {
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%; transform: translateY(-50%) translateX(-4px);
+    background: rgba(12,10,6,0.95);
+    border: 1px solid rgba(247,201,72,0.3);
+    border-radius: 8px;
+    padding: 7px 11px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 100;
+    backdrop-filter: blur(16px);
+  }
+  .crypto-tooltip::before {
+    content: '';
+    position: absolute;
+    right: 100%; top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: rgba(247,201,72,0.3);
+  }
+  .crypto-tooltip-name {
+    font-family: 'Unispace', sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: #f7c948;
+    display: block;
+  }
+  .crypto-tooltip-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px; font-weight: 300;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.02em;
+    display: block;
+    margin-top: 2px;
+  }
+  .crypto-btn:hover .crypto-tooltip {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  /* ════════════════════════════════════════
+     MODULE 5 — BITCOIN HUB (A3–A4)
+     Split: left=links (50%), right=ticker (50%)
+  ════════════════════════════════════════ */
+  .btc-outer {
+    display: flex; flex-direction: row;
+    width: 100%; height: 100%;
+    gap: 8px; align-items: stretch;
+    overflow: hidden;
+  }
+  .btc-wrap {
+    display: flex; flex-direction: column;
+    width: 50%; flex-shrink: 0;
+    animation: fadein 0.9s ease both;
+    min-height: 0;
+  }
+
+  .btc-header {
+    display: flex; align-items: baseline; gap: 6px;
+    margin-bottom: 4px; padding-left: 2px;
+    flex-shrink: 0;
+  }
+
+  .btc-label {
+    font-family: 'Unispace', sans-serif;
+    font-size: 10px; font-weight: 400;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    background: linear-gradient(135deg, #ff9900 0%, #ffcc44 40%, #ff6600 80%, #ff3300 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .btc-sublabel {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 7px; font-weight: 300;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,200,60,0.28);
+  }
+
+  /* btc-grid stretches to fill remaining height */
+  .btc-grid {
+    display: flex; flex-direction: column;
+    flex: 1; min-height: 0;
+    border-radius: var(--panel-radius); overflow: hidden;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: rgba(255,153,0,0.05);
+    border: 1px solid rgba(255,153,0,0.18);
+    box-shadow: 0 0 20px rgba(255,153,0,0.05);
+  }
+
+  /* each row gets equal share of height — no fixed padding */
+  .btc-btn {
+    flex: 1; min-height: 0;
+    max-height: 26px;
+    display: flex; align-items: center;
+    gap: 7px; padding: 0 8px;
+    cursor: pointer; text-decoration: none;
+    background: transparent;
+    transition: background 0.15s;
+    position: relative;
+    border: none;
+    border-bottom: 1px solid rgba(255,153,0,0.07);
+  }
+  .btc-btn:last-child { border-bottom: none; }
+  .btc-btn:hover { background: rgba(255,153,0,0.08); }
+
+  .btc-btn img {
+    width: 14px; height: 14px; object-fit: contain;
+    border-radius: 4px; flex-shrink: 0;
+    filter: drop-shadow(0 1px 5px rgba(0,0,0,0.6));
+    transition: transform 0.15s ease;
+  }
+  .btc-btn:hover img { transform: scale(1.12); }
+
+  .btc-btn-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8px; font-weight: 400;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.02em; flex: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: color 0.15s;
+  }
+  .btc-btn:hover .btc-btn-name { color: #fff; }
+
+  /* ── Bitcoin tooltip ── */
+  .btc-tooltip {
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%; transform: translateY(-50%) translateX(-4px);
+    background: rgba(10,7,2,0.96);
+    border: 1px solid rgba(255,153,0,0.3);
+    border-radius: 8px; padding: 6px 10px;
+    white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 100; backdrop-filter: blur(16px);
+  }
+  .btc-tooltip::before {
+    content: ''; position: absolute;
+    right: 100%; top: 50%; transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: rgba(255,153,0,0.3);
+  }
+  .btc-tooltip-name {
+    font-family: 'Unispace', sans-serif; font-size: 8px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: #ff9900; display: block;
+  }
+  .btc-tooltip-desc {
+    font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 300;
+    color: rgba(255,255,255,0.45); letter-spacing: 0.02em;
+    display: block; margin-top: 2px;
+  }
+  .btc-btn:hover .btc-tooltip { opacity: 1; transform: translateY(-50%) translateX(0); }
+
+  /* ── CRYPTO TICKER — right half, 6 rows flush with left ── */
+  .ticker-wrap {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    animation: fadein 1s ease both;
+  }
+  .ticker-header {
+    font-family: var(--label-font);
+    font-size: var(--label-size); font-weight: 700;
+    letter-spacing: var(--label-spacing); text-transform: uppercase;
+    color: rgba(255,200,60,0.4);
+    margin-bottom: 7px; padding-left: 2px;
+    flex-shrink: 0;
+  }
+  .ticker-list {
+    display: flex; flex-direction: column;
+    flex: 1; min-height: 0; gap: 3px;
+  }
+  .ticker-row {
+    flex: 1; min-height: 0;
+    display: flex; align-items: center;
+    gap: 6px; padding: 0 8px;
+    border-radius: 7px;
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,200,60,0.09);
+    cursor: pointer; text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .ticker-row:hover { background: rgba(255,153,0,0.1); border-color: rgba(255,153,0,0.22); }
+  .ticker-coin-icon {
+    width: 16px; height: 16px; border-radius: 50%;
+    flex-shrink: 0; object-fit: cover;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+  }
+  .ticker-sym {
+    font-family: 'Unispace', sans-serif;
+    font-size: 7px; font-weight: 400;
+    color: rgba(255,200,80,0.88);
+    letter-spacing: 0.05em; min-width: 28px;
+  }
+  .ticker-price {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8px; font-weight: 400;
+    color: rgba(255,255,255,0.82);
+    flex: 1; text-align: right;
+  }
+  .ticker-change {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 7px; font-weight: 300;
+    min-width: 40px; text-align: right;
+    letter-spacing: 0.01em;
+  }
+  .ticker-change.up   { color: #3ddc84; }
+  .ticker-change.down { color: #ff5252; }
+  .ticker-refresh {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 6px; font-weight: 300;
+    color: rgba(255,255,255,0.15);
+    text-align: right; margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ════════════════════════════════════════
+     MODULE 6 — WEATHER (D1–D2)
+  ════════════════════════════════════════ */
+  .wx-outer {
+    display: flex; flex-direction: column;
+    width: 100%; height: auto;
+    gap: 5px;
+  }
+  .wx-panel {
+    min-height: 0;
+    display: flex; flex-direction: column;
+    border-radius: var(--panel-radius);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: rgba(60,110,200,0.07);
+    border: 1px solid rgba(100,180,255,0.15);
+    box-shadow: 0 0 16px rgba(80,140,255,0.05);
+    padding: 6px 9px;
+    animation: fadein 1.1s ease both;
+    overflow: hidden;
+  }
+  /* top row: location label left, outfit right */
+  .wx-top-row {
+    display: flex; align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 5px; flex-shrink: 0;
+  }
+  .wx-loc {
+    font-family: var(--label-font);
+    font-size: 8px; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(140,200,255,0.5);
+  }
+  .wx-outfit-inline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 7px; font-weight: 300;
+    font-style: italic;
+    color: rgba(180,220,255,0.5);
+    letter-spacing: 0.02em;
+    text-align: right;
+    max-width: 55%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .wx-current-row {
+    display: flex; align-items: center;
+    gap: 7px; margin-bottom: 4px; flex-shrink: 0;
+  }
+  .wx-icon {
+    font-size: 17px; line-height: 1;
+    filter: drop-shadow(0 2px 6px rgba(0,120,255,0.3));
+  }
+  .wx-temp {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px; font-weight: 200;
+    color: rgba(255,255,255,0.9);
+    line-height: 1; letter-spacing: -0.02em;
+  }
+  .wx-temp sup {
+    font-size: 9px; font-weight: 300;
+    color: rgba(255,255,255,0.5); vertical-align: super;
+  }
+  .wx-meta {
+    display: flex; flex-direction: column;
+    gap: 1px; margin-left: 2px;
+  }
+  .wx-meta span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 7px; font-weight: 300;
+    color: rgba(255,255,255,0.32); letter-spacing: 0.03em;
+  }
+  .wx-cond {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8px; font-weight: 300;
+    color: rgba(200,230,255,0.45);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 6px; flex-shrink: 0;
+  }
+  .wx-divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(100,180,255,0.12), transparent);
+    margin-bottom: 6px; flex-shrink: 0;
+  }
+  .wx-forecast {
+    display: flex; flex-direction: row;
+    gap: 3px;
+    align-items: stretch;
+    margin-top: 2px;
+  }
+  .wx-day {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px; padding: 3px 2px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(100,180,255,0.07);
+    transition: background 0.15s;
+  }
+  .wx-day:hover { background: rgba(100,180,255,0.08); }
+  .wx-day-name {
+    font-family: var(--label-font);
+    font-size: 5px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+  }
+  .wx-day-icon { font-size: 9px; line-height: 1; }
+  .wx-day-hi {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8px; font-weight: 400;
+    color: rgba(255,255,255,0.72);
+  }
+  .wx-day-rain {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 5px; font-weight: 300;
+    color: rgba(100,180,255,0.5);
+  }
+
+</style>
+</head>
+<body>
+<div class="bg"></div>
+
+<div class="grid">
+
+  <!-- ═══ A1–A2: MODULE 3 — SEARCH WIDGET ═══ -->
+  <div class="cell cell-a1">
+    <div class="sw-wrap">
+      <div class="sw-label">Search</div>
+      <div class="sw-engines">
+        <button class="eng" onclick="swSearch('google')" title="Google">
+          <img src="https://www.google.com/s2/favicons?domain=google.com&sz=64" alt="Google">
+        </button>
+        <button class="eng" onclick="swSearch('yandex')" title="Yandex">
+          <img src="https://www.google.com/s2/favicons?domain=yandex.com&sz=64" alt="Yandex">
+        </button>
+        <button class="eng" onclick="swSearch('wiki')" title="Wikipedia">
+          <img src="https://www.google.com/s2/favicons?domain=wikipedia.org&sz=64" alt="Wikipedia">
+        </button>
+        <button class="eng" onclick="swSearch('brave')" title="Brave Search">
+          <img src="https://www.google.com/s2/favicons?domain=search.brave.com&sz=64" alt="Brave">
+        </button>
+        <button class="eng" onclick="swSearch('bing')" title="Bing">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5))">
+            <rect width="24" height="24" rx="5" fill="#008373"/>
+            <path d="M7 4.5L7 19L10.5 17.2L14.5 14.8C15.5 14.2 16 13.2 16 12C16 10.5 15 9.3 13.5 9L10 8V4.5L7 4.5Z" fill="white"/>
+            <path d="M10 8L13.5 9C15 9.3 16 10.5 16 12C16 13.2 15.5 14.2 14.5 14.8L10.5 17.2L17 14L17 10L10 8Z" fill="rgba(255,255,255,0.6)"/>
+          </svg>
+        </button>
+      </div>
+      <div class="sw-divider"></div>
+      <div class="sw-input-row">
+        <input id="sw-input" type="text" placeholder="Search anything..."
+          onkeydown="if(event.key==='Enter') swSearch('google')" autofocus />
+        <button class="sw-go" onclick="swSearch('google')">→</button>
+      </div>
+      <div class="sw-hint">Enter → Google &nbsp;·&nbsp; click icon → that engine</div>
+    </div>
+  </div>
+
+  <!-- ═══ A3–A4: MODULE 5 — BITCOIN HUB + TICKER ═══ -->
+  <div class="cell cell-a2">
+    <div class="btc-outer">
+
+      <!-- LEFT: links -->
+      <div class="btc-wrap">
+        <div class="btc-header">
+          <span class="btc-label">₿ CRPTO HUB</span>
+          <span class="btc-sublabel">signal layer</span>
+        </div>
+        <div class="btc-grid">
+
+          <a class="btc-btn" href="https://dexscreener.com" target="_blank">
+            <img src="https://www.google.com/s2/favicons?domain=dexscreener.com&sz=64" alt="DexScreener">
+            <span class="btc-btn-name">DexScreener</span>
+            <span class="btc-tooltip">
+              <span class="btc-tooltip-name">DexScreener</span>
+              <span class="btc-tooltip-desc">alpha hunting</span>
+            </span>
+          </a>
+
+          <a class="btc-btn" href="https://www.dextools.io" target="_blank">
+            <img src="https://www.google.com/s2/favicons?domain=dextools.io&sz=64" alt="DexTools">
+            <span class="btc-btn-name">DexTools</span>
+            <span class="btc-tooltip">
+              <span class="btc-tooltip-name">DexTools</span>
+              <span class="btc-tooltip-desc">deeper wallet / holder analysis</span>
+            </span>
+          </a>
+
+          <a class="btc-btn" href="https://www.coingecko.com" target="_blank">
+            <img src="https://www.google.com/s2/favicons?domain=coingecko.com&sz=64" alt="CoinGecko">
+            <span class="btc-btn-name">CoinGecko</span>
+            <span class="btc-tooltip">
+              <span class="btc-tooltip-name">CoinGecko</span>
+              <span class="btc-tooltip-desc">fundamentals + legitimacy</span>
+            </span>
+          </a>
+
+          <a class="btc-btn" href="https://coinmarketcap.com" target="_blank">
+            <img src="https://www.google.com/s2/favicons?domain=coinmarketcap.com&sz=64" alt="CoinMarketCap">
+            <span class="btc-btn-name">CoinMarketCap</span>
+            <span class="btc-tooltip">
+              <span class="btc-tooltip-name">CoinMarketCap</span>
+              <span class="btc-tooltip-desc">mainstream view</span>
+            </span>
+          </a>
+
+          <a class="btc-btn" href="https://dune.com" target="_blank">
+            <img src="https://www.google.com/s2/favicons?domain=dune.com&sz=64" alt="Dune">
+            <span class="btc-btn-name">Dune / Nansen</span>
+            <span class="btc-tooltip">
+              <span class="btc-tooltip-name">Dune / Nansen</span>
+              <span class="btc-tooltip-desc">whale intelligence</span>
+            </span>
+          </a>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: live ticker -->
+      <div class="ticker-wrap">
+        <div class="ticker-header">↑ Top Movers</div>
+        <div class="ticker-list" id="tickerList">
+          <!-- populated by JS -->
+          <div style="color:rgba(255,255,255,0.2);font-size:9px;font-family:'DM Sans',sans-serif;padding:8px 4px;">Loading…</div>
+        </div>
+        <div class="ticker-refresh" id="tickerRefresh"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ B1–C2: MODULE 1 — CLOCK / BANNER ═══ -->
+  <div class="cell cell-banner">
+    <div class="banner-wrap glass">
+      <div class="banner-clock-row">
+        <div class="banner-time-block">
+          <span class="banner-time" id="bHM">00:00</span>
+          <span class="banner-right-col">
+            <span class="banner-secs" id="bSecs">:00</span>
+            <span class="banner-ampm" id="bAmPm">AM</span>
+            <span class="banner-date" id="bDate"></span>
+          </span>
+        </div>
+      </div>
+      <div class="banner-title">Master Apex Dashboard</div>
+      <div class="banner-search-wrap">
+        <div class="banner-search-row glass">
+          <input id="bSearch" type="text" placeholder="Search the web..." autocomplete="off"
+            onkeydown="if(event.key==='Enter') bannerSearch('google')" />
+          <button class="banner-go" onclick="bannerSearch('google')">&#8594;</button>
+        </div>
+        <div class="banner-engines-row">
+          <button class="beng" onclick="bannerSearch('reddit')" title="Reddit">
+            <img src="https://www.google.com/s2/favicons?domain=reddit.com&sz=64" alt="Reddit">
+            <span>Reddit</span>
+          </button>
+          <button class="beng" onclick="bannerSearch('youtube')" title="YouTube">
+            <img src="https://www.google.com/s2/favicons?domain=youtube.com&sz=64" alt="YouTube">
+            <span>YouTube</span>
+          </button>
+          <button class="beng" onclick="bannerSearch('onlyguider')" title="OnlyGuider">
+            <img src="https://www.google.com/s2/favicons?domain=onlyguider.com&sz=64" alt="OnlyGuider">
+            <span>OnlyGuider</span>
+          </button>
+          <button class="beng" onclick="bannerSearch('tiktok')" title="TikTok">
+            <img src="https://www.google.com/s2/favicons?domain=tiktok.com&sz=64" alt="TikTok">
+            <span>TikTok</span>
+          </button>
+          <button class="beng" onclick="bannerSearch('twitter')" title="X / Twitter">
+            <img src="https://www.google.com/s2/favicons?domain=x.com&sz=64" alt="X">
+            <span>X</span>
+          </button>
+          <button class="beng" onclick="bannerSearch('wolfram')" title="Wolfram Alpha">
+            <img src="https://www.google.com/s2/favicons?domain=wolframalpha.com&sz=64" alt="Wolfram">
+            <span>Wolfram</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ D1–D2: MODULE 6 — WEATHER ═══ -->
+  <div class="cell cell-d1">
+    <div class="wx-outer">
+
+      <!-- HOME: 90029 -->
+      <div class="wx-panel">
+        <div class="wx-top-row">
+          <div class="wx-loc">🏠 Home · 90029</div>
+          <div class="wx-outfit-inline" id="wx1Outfit">👕 shorts + tee, shades</div>
+        </div>
+        <div class="wx-current-row">
+          <div class="wx-icon" id="wx1Icon">🌙</div>
+          <div class="wx-temp" id="wx1Temp">53<sup>°F</sup></div>
+          <div class="wx-meta">
+            <span id="wx1Hum">💧 Humidity —</span>
+            <span id="wx1Rain">🌂 Rain 0%</span>
+          </div>
+        </div>
+        <div class="wx-cond" id="wx1Cond">Clear</div>
+        <div class="wx-divider"></div>
+        <div class="wx-forecast">
+          <div class="wx-day">
+            <div class="wx-day-name">Wed</div>
+            <div class="wx-day-icon">☀️</div>
+            <div class="wx-day-hi">75°</div>
+            <div class="wx-day-rain">0%</div>
+          </div>
+          <div class="wx-day">
+            <div class="wx-day-name">Thu</div>
+            <div class="wx-day-icon">🌤️</div>
+            <div class="wx-day-hi">90°</div>
+            <div class="wx-day-rain">5%</div>
+          </div>
+          <div class="wx-day">
+            <div class="wx-day-name">Fri</div>
+            <div class="wx-day-icon">🌤️</div>
+            <div class="wx-day-hi">88°</div>
+            <div class="wx-day-rain">10%</div>
+          </div>
+          <div class="wx-day">
+            <div class="wx-day-name">Sat</div>
+            <div class="wx-day-icon">⛅</div>
+            <div class="wx-day-hi">81°</div>
+            <div class="wx-day-rain">10%</div>
+          </div>
+          <div class="wx-day">
+            <div class="wx-day-name">Sun</div>
+            <div class="wx-day-icon">🌥️</div>
+            <div class="wx-day-hi">76°</div>
+            <div class="wx-day-rain">15%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OFFICE: 90039 -->
+      <div class="wx-panel">
+        <div class="wx-top-row">
+          <div class="wx-loc">🏢 Office · 90039</div>
+          <div class="wx-outfit-inline" id="wx2Outfit">👕 shorts + tee, shades</div>
+        </div>
+        <div class="wx-current-row">
+          <div class="wx-icon" id="wx2Icon">🌙</div>
+          <div class="wx-temp" id="wx2Temp">53<sup>°F</sup></div>
+          <div class="wx-meta">
+            <span id="wx2Hum">💧 Humidity —</span>
+            <span id="wx2Rain">🌂 Rain 0%</span>
+          </div>
+        </div>
+        <div class="wx-cond" id="wx2Cond">Clear</div>
+        <div class="wx-divider"></div>
+        <div class="wx-forecast">
+          <div class="wx-day">
+            <div class="wx-day-name">Wed</div>
+            <div class="wx-day-icon">☀️</div>
+            <div class="wx-day-hi">77°</div>
+            <div class="wx-day-rain">0%</div>
+          </div>
+          <div class="wx-day">
+            <div class="wx-day-name">Thu</div>
+            <div class="wx-day-icon">🌤️</div>
+            <div class="wx-day-hi">90°</div>
+            <div class="wx-day-rain">5%</div>
+          </div>
+          <div class="wx-day">
+            <div class="wx-day-name">Fri</div>
+            <div class="wx-day-icon">🌤️</div>
+            <div class="wx-day-hi">89°</div>
+            <div class="wx-day-rain">10%</div>
+          </div>
+          <div class="wx-day">
+            <div class="wx-day-name">Sat</div>
+            <div class="wx-day-icon">⛅</div>
+            <div class="wx-day-hi">82°</div>
+            <div class="wx-day-rain">10%</div>
+          </div>
+          <div class="wx-day">
+            <div class="wx-day-name">Sun</div>
+            <div class="wx-day-icon">🌥️</div>
+            <div class="wx-day-hi">76°</div>
+            <div class="wx-day-rain">15%</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ B3–C4: MODULE 2 — QUICK LINKS ═══ -->
+  <div class="cell cell-links">
+    <div class="lw-wrap">
+      <div class="lw-label">Quick Links</div>
+      <div class="lw-grid">
+        <!-- Row 1 -->
+        <a class="lw-btn" href="https://internet-map.net/" target="_blank" title="Internet Map">
+          <img src="https://www.google.com/s2/favicons?domain=internet-map.net&sz=64" alt="Internet Map">
+          Net Map
+        </a>
+        <a class="lw-btn" href="https://earth.nullschool.net/#current/wind/surface/level/orthographic=-106.69,21.78,473" target="_blank" title="Earth Wind Map">
+          <img src="https://www.google.com/s2/favicons?domain=earth.nullschool.net&sz=64" alt="Earth Wind">
+          Wind Map
+        </a>
+        <a class="lw-btn" href="https://www.producthunt.com/" target="_blank" title="Product Hunt">
+          <img src="https://www.google.com/s2/favicons?domain=producthunt.com&sz=64" alt="Product Hunt">
+          PH
+        </a>
+        <a class="lw-btn" href="http://radio.garden/" target="_blank" title="Radio Garden">
+          <img src="https://www.google.com/s2/favicons?domain=radio.garden&sz=64" alt="Radio Garden">
+          Radio
+        </a>
+        <a class="lw-btn" href="https://images.wallpaperscraft.com/image/single/moon_black_minimalism_190070_2560x1080.jpg" target="_blank" title="Moon Wallpaper">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="rgba(255,255,255,0.85)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+          </svg>
+          Wallpaper
+        </a>
+        <!-- Row 2 -->
+        <a class="lw-btn" href="https://civitai.com/models" target="_blank" title="Civitai">
+          <img src="https://www.google.com/s2/favicons?domain=civitai.com&sz=64" alt="Civitai">
+          Civitai
+        </a>
+        <a class="lw-btn" href="https://www.youtube.com/" target="_blank" title="YouTube">
+          <img src="https://www.google.com/s2/favicons?domain=youtube.com&sz=64" alt="YouTube">
+          YouTube
+        </a>
+        <a class="lw-btn" href="https://tineye.com/" target="_blank" title="TinEye">
+          <img src="https://www.google.com/s2/favicons?domain=tineye.com&sz=64" alt="TinEye">
+          TinEye
+        </a>
+        <a class="lw-btn" href="https://www.refdesk.com/" target="_blank" title="RefDesk">
+          <img src="https://www.google.com/s2/favicons?domain=refdesk.com&sz=64" alt="RefDesk">
+          RefDesk
+        </a>
+        <a class="lw-btn" href="https://ahmia.fi/" target="_blank" title="Ahmia">
+          <img src="https://www.google.com/s2/favicons?domain=ahmia.fi&sz=64" alt="Ahmia">
+          Ahmia
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ D3–D4: MODULE 7 — WORLD NEWS FEED ═══ -->
+  <div class="cell cell-d2">
+    <div class="news-wrap">
+      <div class="news-header">
+        <span class="news-label">🌐 World News</span>
+        <button class="news-refresh-btn" onclick="loadNews()" title="Refresh">⟳</button>
+      </div>
+      <div class="news-list" id="newsList">
+        <div class="news-loading">Loading headlines…</div>
+      </div>
+      <div class="news-footer" id="newsFooter"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ── Search Widget (Module 3) ── */
+  const engines = {
+    google: 'https://www.google.com/search?q=',
+    yandex: 'https://yandex.com/search/?text=',
+    wiki:   'https://en.wikipedia.org/wiki/Special:Search?search=',
+    brave:  'https://search.brave.com/search?q=',
+    bing:   'https://www.bing.com/search?q='
+  };
+  function swSearch(engine) {
+    const q = document.getElementById('sw-input').value.trim();
+    if (!q) return;
+    window.open(engines[engine] + encodeURIComponent(q), '_blank');
+  }
+
+  /* ── Banner Search (Module 1) ── */
+  const bannerEngines = {
+    google:     'https://www.google.com/search?q=',
+    reddit:     'https://www.reddit.com/search/?q=',
+    youtube:    'https://www.youtube.com/results?search_query=',
+    onlyguider: 'https://onlyguider.com/search?q=',
+    tiktok:     'https://www.tiktok.com/search?q=',
+    twitter:    'https://x.com/search?q=',
+    wolfram:    'https://www.wolframalpha.com/input?i='
+  };
+  function bannerSearch(engine) {
+    const q = document.getElementById('bSearch').value.trim();
+    if (!q) return;
+    window.open(bannerEngines[engine] + encodeURIComponent(q), '_blank');
+  }
+
+  /* ── Live Clock ── */
+  function updateClock() {
+    const now = new Date();
+    let h = now.getHours();
+    const m = now.getMinutes().toString().padStart(2,'0');
+    const s = now.getSeconds().toString().padStart(2,'0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    document.getElementById('bHM').textContent    = h + ':' + m;
+    document.getElementById('bSecs').textContent  = ':' + s;
+    document.getElementById('bAmPm').textContent  = ampm;
+    const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now2 = new Date();
+    document.getElementById('bDate').textContent =
+      days[now2.getDay()] + ' ' + months[now2.getMonth()] + ' ' + now2.getDate() + ', ' + now2.getFullYear();
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ── Live Crypto Ticker (CoinGecko public API — no key needed) ── */
+  const COINS = [
+    { id: 'bitcoin',      sym: 'BTC', url: 'https://coinmarketcap.com/currencies/bitcoin/',
+      icon: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
+    { id: 'ethereum',     sym: 'ETH', url: 'https://coinmarketcap.com/currencies/ethereum/',
+      icon: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
+    { id: 'binancecoin',  sym: 'BNB', url: 'https://coinmarketcap.com/currencies/bnb/',
+      icon: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png' },
+    { id: 'ripple',       sym: 'XRP', url: 'https://coinmarketcap.com/currencies/xrp/',
+      icon: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png' },
+    { id: 'solana',       sym: 'SOL', url: 'https://coinmarketcap.com/currencies/solana/',
+      icon: 'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
+    { id: 'avalanche-2',  sym: 'AVAX', url: 'https://coinmarketcap.com/currencies/avalanche/',
+      icon: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png' }
+  ];
+
+  function fmtPrice(p) {
+    if (p >= 1000) return '$' + p.toLocaleString('en-US', {maximumFractionDigits: 0});
+    if (p >= 1)    return '$' + p.toFixed(2);
+    return '$' + p.toFixed(4);
+  }
+
+  async function fetchTicker() {
+    const ids = COINS.map(c => c.id).join(',');
+    try {
+      const r = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
+        { cache: 'no-store' }
+      );
+      const data = await r.json();
+      const list = document.getElementById('tickerList');
+      list.innerHTML = '';
+      COINS.forEach(coin => {
+        const d = data[coin.id];
+        if (!d) return;
+        const chg = d.usd_24h_change || 0;
+        const up  = chg >= 0;
+        const row = document.createElement('a');
+        row.className = 'ticker-row';
+        row.href = coin.url;
+        row.target = '_blank';
+        row.innerHTML = `
+          <img class="ticker-coin-icon" src="${coin.icon}"
+               onerror="this.src='https://assets.coingecko.com/coins/images/1/small/bitcoin.png'" alt="${coin.sym}">
+          <span class="ticker-sym">${coin.sym}</span>
+          <span class="ticker-price">${fmtPrice(d.usd)}</span>
+          <span class="ticker-change ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(chg).toFixed(2)}%</span>`;
+        list.appendChild(row);
+      });
+      const now = new Date();
+      document.getElementById('tickerRefresh').textContent =
+        'updated ' + now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+    } catch(e) {
+      document.getElementById('tickerList').innerHTML =
+        '<div style="color:rgba(255,100,60,0.5);font-size:8px;font-family:\'DM Sans\',sans-serif;padding:4px;">API unavailable</div>';
+    }
+  }
+
+  fetchTicker();
+  setInterval(fetchTicker, 60000); // refresh every 60s
+
+  /* ── Weather Outfit Logic ── */
+  function getOutfit(tempF, rain, cond) {
+    const c = (cond || '').toLowerCase();
+    const isRain = rain >= 30 || c.includes('rain') || c.includes('drizzle');
+    if (isRain)       return '🌂 rain jacket + jeans';
+    if (tempF >= 85)  return '🩳 shorts + tee, shades';
+    if (tempF >= 72)  return '👕 shorts + light tee';
+    if (tempF >= 60)  return '🧥 jeans + cardigan';
+    if (tempF >= 48)  return '🧥 jeans + hoodie';
+    return '🧣 jacket + scarf, bundle up';
+  }
+
+  /* ── World News Feed ── */
+  const NEWS_STORIES = [
+    { source:'Reuters', headline:'Global leaders gather for emergency climate summit in Geneva', snippet:'Nations pledge accelerated emissions cuts by 2030', emoji:'🌍', url:'https://reuters.com' },
+    { source:'BBC World', headline:'Earthquake strikes Turkey-Syria border, rescue teams deployed', snippet:'Magnitude 6.2 tremor collapses several buildings in border region', emoji:'🆘', url:'https://bbc.com/news' },
+    { source:'Al Jazeera', headline:'Ceasefire talks resume in Middle East amid humanitarian pressure', snippet:'International mediators convene for third round of negotiations', emoji:'🕊️', url:'https://aljazeera.com' },
+    { source:'AP News', headline:'Tech giants face antitrust scrutiny across three continents simultaneously', snippet:'EU, US, and Asian regulators coordinate unprecedented joint inquiry', emoji:'⚖️', url:'https://apnews.com' },
+    { source:'The Guardian', headline:'Amazon deforestation hits decade low as enforcement ramps up', snippet:'Satellite data confirms 40% drop in illegal clearing year-over-year', emoji:'🌳', url:'https://theguardian.com' },
+    { source:'Bloomberg', headline:'Central banks signal coordinated rate pause as inflation cools globally', snippet:'Fed, ECB and BoJ signal synchronized hold through Q2', emoji:'💹', url:'https://bloomberg.com' },
+    { source:'NHK World', headline:'Japan unveils next-generation bullet train capable of 400 km/h', snippet:'ALFA-X prototype set for commercial deployment by 2027', emoji:'🚄', url:'https://nhk.or.jp/nhkworld' },
+    { source:'DW News', headline:'Ukraine reconstruction fund exceeds $50B as donor nations commit', snippet:'Conference in Berlin yields historic pledges for postwar rebuilding', emoji:'🏗️', url:'https://dw.com' },
+    { source:'France 24', headline:'WHO declares new mpox strain of concern, urges vaccine sharing', snippet:'Cases detected in 14 countries since last month; stockpiles mobilized', emoji:'🧬', url:'https://france24.com' },
+    { source:'Xinhua', headline:'China launches lunar far-side sample return mission successfully', snippet:'Chang\'e 7 probe begins long journey to collect regolith specimens', emoji:'🌕', url:'https://xinhuanet.com' },
+    { source:'Times of India', headline:'India surpasses 1 billion smartphone users milestone', snippet:'Telecom ministry confirms penetration now at 72% of population', emoji:'📱', url:'https://timesofindia.indiatimes.com' },
+    { source:'The Economist', headline:'AI productivity boom finally showing up in GDP statistics', snippet:'OECD data reveals 1.4% annual uplift in advanced economies', emoji:'🤖', url:'https://economist.com' },
+  ];
+
+  function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function loadNews() {
+    const list = document.getElementById('newsList');
+    const footer = document.getElementById('newsFooter');
+    list.innerHTML = '<div class="news-loading">Refreshing…</div>';
+
+    setTimeout(() => {
+      const stories = shuffleArray(NEWS_STORIES).slice(0, 8);
+      list.innerHTML = '';
+      stories.forEach(s => {
+        const card = document.createElement('a');
+        card.className = 'news-card';
+        card.href = s.url;
+        card.target = '_blank';
+        card.innerHTML = `
+          <div class="news-img-placeholder">${s.emoji}</div>
+          <div class="news-body">
+            <div class="news-source">${s.source}</div>
+            <div class="news-headline">${s.headline}</div>
+            <div class="news-snippet">${s.snippet}</div>
+          </div>`;
+        list.appendChild(card);
+      });
+      const now = new Date();
+      footer.textContent = 'updated ' + now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+    }, 400);
+  }
+
+  loadNews();
+  setInterval(loadNews, 300000); // refresh every 5 min
+
+  document.getElementById('wx1Outfit').textContent = getOutfit(53, 0, 'Clear');
+  document.getElementById('wx2Outfit').textContent = getOutfit(53, 0, 'Clear');
+</script>
+</body>
+</html>
