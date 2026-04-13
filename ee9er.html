@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>emi9</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&family=Syne:wght@700;800&family=Unispace&display=swap" rel="stylesheet">
+<style>
+  /* ── CLEANUP & GLOBAL ── */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { height: 100vh; width: 100vw; overflow: hidden; font-family: 'DM Sans', sans-serif; background: #0a0a0a; color: white; }
+  .bg { position: fixed; inset: 0; background: url('homeee.jpg') center/cover no-repeat; z-index: -1; filter: brightness(0.5); }
+
+  /* ── LAYOUT ── */
+  .container { display: flex; height: 100vh; padding: 40px; gap: 40px; }
+  .left-panel { width: 320px; display: flex; flex-direction: column; gap: 20px; }
+  .center-content { flex: 1; display: flex; flex-direction: column; align-items: center; }
+
+  /* ── CENTER SEARCH (CLOCK + SEARCH + ENGINES) ── */
+  .center-group { text-align: center; margin-top: 50px; margin-bottom: 40px; }
+  .clock { font-family: 'Unispace', monospace; font-size: 5rem; letter-spacing: -2px; margin-bottom: 15px; }
+  .search-wrapper { width: 600px; display: flex; flex-direction: column; gap: 15px; align-items: center; }
+  .search-input { width: 100%; padding: 18px 30px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); color: white; font-size: 1.2rem; outline: none; transition: 0.3s; }
+  .search-input:focus { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
+
+  /* ── SEARCH ENGINE ICONS (CENTERED) ── */
+  .engine-row { display: flex; gap: 15px; justify-content: center; margin-top: 10px; }
+  .engine-btn { width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; }
+  .engine-btn:hover { background: rgba(255,255,255,0.15); transform: translateY(-2px); }
+  .engine-btn img { width: 20px; height: 20px; }
+
+  /* ── LEFT PANEL ICONS ── */
+  .glass-card { background: rgba(0,0,0,0.3); backdrop-filter: blur(20px); border-radius: 24px; padding: 24px; border: 1px solid rgba(255,255,255,0.05); }
+  .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .ai-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; } /* New Row for AI icons */
+  .icon-link { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; transition: 0.2s ease; cursor: pointer; }
+  .icon-link:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+  .icon-link img { width: 24px; height: 24px; }
+
+  /* ── WIDGETS ── */
+  .weather-item { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; }
+  .news-container { flex: 1; width: 100%; overflow-y: auto; padding-right: 10px; }
+  .news-card { display: block; text-decoration: none; color: white; margin-bottom: 15px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px; transition: 0.3s; border: 1px solid transparent; }
+  .news-card:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.1); }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="container">
+    <div class="left-panel">
+      <div class="glass-card">
+        <div class="weather-item" id="w-90029"><span>Home (90029)</span><span class="temp">--°</span></div>
+        <div class="weather-item" id="w-90039"><span>Office (90039)</span><span class="temp">--°</span></div>
+      </div>
+      <div class="glass-card">
+        <p style="font-size: 0.7rem; opacity: 0.5; margin-bottom: 12px; letter-spacing: 1px;">QUICK LINKS</p>
+        <div class="icon-grid">
+          <div class="icon-link" onclick="window.open('https://www.google.com')"><img src="https://www.google.com/favicon.ico"></div>
+          <div class="icon-link" onclick="window.open('https://www.bing.com')"><img src="https://www.bing.com/favicon.ico"></div>
+          <div class="icon-link" onclick="window.open('https://duckduckgo.com')"><img src="https://duckduckgo.com/favicon.ico"></div>
+        </div>
+        <div class="ai-row" id="ai-passthrough"></div>
+      </div>
+    </div>
+
+    <div class="center-content">
+      <div class="center-group">
+        <div class="clock" id="clock">00:00</div>
+        <div class="search-wrapper">
+          <input type="text" id="main-search" class="search-input" placeholder="Type query..." autofocus>
+          <div class="engine-row">
+             <div class="engine-btn" title="Google Search" onclick="performSearch('google')"><img src="https://www.google.com/favicon.ico"></div>
+             <div class="engine-btn" title="Bing Search" onclick="performSearch('bing')"><img src="https://www.bing.com/favicon.ico"></div>
+          </div>
+        </div>
+      </div>
+      <div class="news-container" id="news-feed"></div>
+    </div>
+  </div>
+
+  <script>
+    // Update Clock
+    function updateClock() {
+      document.getElementById('clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    // AI Passthrough logic
+    const aiTools = [
+      { n: 'Claude', u: 'https://claude.ai/new?q=', i: 'https://claude.ai/favicon.ico' },
+      { n: 'ChatGPT', u: 'https://chatgpt.com/?q=', i: 'https://openai.com/favicon.ico' },
+      { n: 'Gemini', u: 'https://gemini.google.com/app?q=', i: 'https://www.gstatic.com/lamda/images/favicon_v2_16x16.png' },
+      { n: 'Venice', u: 'https://venice.ai/chat?q=', i: 'https://venice.ai/favicon.ico' },
+      { n: 'Perplexity', u: 'https://www.perplexity.ai/?q=', i: 'https://www.perplexity.ai/favicon.ico' },
+      { n: 'DeepSeek', u: 'https://chat.deepseek.com/?q=', i: 'https://chat.deepseek.com/favicon.ico' }
+    ];
+
+    const aiGrid = document.getElementById('ai-passthrough');
+    aiTools.forEach(tool => {
+      const btn = document.createElement('div');
+      btn.className = 'icon-link';
+      btn.innerHTML = `<img src="${tool.i}" title="${tool.n}">`;
+      btn.onclick = () => {
+        const query = document.getElementById('main-search').value;
+        window.open(tool.u + encodeURIComponent(query), '_blank');
+      };
+      aiGrid.appendChild(btn);
+    });
+
+    // Standard Search Engines
+    function performSearch(type) {
+      const query = document.getElementById('main-search').value;
+      const urls = { google: 'https://www.google.com/search?q=', bing: 'https://www.bing.com/search?q=' };
+      window.open(urls[type] + encodeURIComponent(query), '_blank');
+    }
+
+    // Live Weather (90029, 90039)
+    async function getW(zip, el) {
+      const coords = zip === '90029' ? '34.09,-118.29' : '34.11,-118.26';
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.split(',')[0]}&longitude=${coords.split(',')[1]}&current_weather=true&temperature_unit=fahrenheit`);
+      const data = await res.json();
+      document.querySelector(`#${el} .temp`).textContent = Math.round(data.current_weather.temperature) + '°';
+    }
+    getW('90029', 'w-90029'); getW('90039', 'w-90039');
+
+    // Live News
+    async function getNews() {
+      const feed = document.getElementById('news-feed');
+      const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://rss.nytimes.com/services/xml/rss/nyt/World.xml');
+      const data = await res.json();
+      feed.innerHTML = data.items.slice(0, 10).map(i => `
+        <a href="${i.link}" target="_blank" class="news-card">
+          <div style="font-weight: 500; font-size: 1.1rem; line-height: 1.4;">${i.title}</div>
+        </a>
+      `).join('');
+    }
+    getNews();
+  </script>
+</body>
+</html>
