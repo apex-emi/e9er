@@ -1051,8 +1051,8 @@
     <div class="sw-wrap">
       <div class="sw-label">Search</div>
       <div class="sw-engines">
-        <button class="eng" onclick="swSearch('google')" title="Google">
-          <img src="https://www.google.com/s2/favicons?domain=google.com&sz=64" alt="Google">
+        <button class="eng" onclick="swSearch('wolfram')" title="Wolfram Alpha">
+          <img src="https://www.google.com/s2/favicons?domain=wolframalpha.com&sz=64" alt="Wolfram">
         </button>
         <button class="eng" onclick="swSearch('yandex')" title="Yandex">
           <img src="https://www.google.com/s2/favicons?domain=yandex.com&sz=64" alt="Yandex">
@@ -1195,10 +1195,10 @@
             <img src="https://www.google.com/s2/favicons?domain=x.com&sz=64" alt="X">
             <span>X</span>
           </button>
-          <button class="beng" onclick="bannerSearch('wolfram')" title="Wolfram Alpha">
-            <img src="https://www.google.com/s2/favicons?domain=wolframalpha.com&sz=64" alt="Wolfram">
-            <span>Wolfram</span>
-          </button>
+           <button class="beng" onclick="bannerSearch('google')" title="Google">
+             <img src="https://www.google.com/s2/favicons?domain=google.com&sz=64" alt="Google">
+             <span>Google</span>
+           </button>
         </div>
         <div class="banner-engines-row">
           <button class="beng" onclick="aiSearch(event, 'perplexity')" title="Perplexity AI">
@@ -1410,7 +1410,7 @@
 <script>
   /* ── Search Widget (Module 3) ── */
   const engines = {
-    google: 'https://www.google.com/search?q=',
+    wolfram: 'https://www.wolframalpha.com/input?i=',
     yandex: 'https://yandex.com/search/?text=',
     wiki:   'https://en.wikipedia.org/wiki/Special:Search?search=',
     brave:  'https://search.brave.com/search?q=',
@@ -1430,7 +1430,7 @@
     onlyguider: 'https://onlyguider.com/search?q=',
     tiktok:     'https://www.tiktok.com/search?q=',
     twitter:    'https://x.com/search?q=',
-    wolfram:    'https://www.wolframalpha.com/input?i='
+    google:    'https://www.google.com/search?q='
   };
   function bannerSearch(engine) {
     const q = document.getElementById('bSearch').value.trim();
